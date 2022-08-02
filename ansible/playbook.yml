@@ -1,0 +1,189 @@
+---
+# PLAY PARA CONFIGURACAO DO HOST
+- hosts: seara
+  name: Configurando o Host
+  remote_user: vagrant
+  become: yes
+  
+  vars_files:
+    - vars.yml
+
+  tasks:
+    - name: Ajustando Timezone
+      timezone:
+        name: America/Sao_Paulo
+
+    - name: Adicionando Key do Repositorio do GCLOUD
+      apt_key:
+        url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+        state: present
+
+    - name: Adicionando o Repositório do GCLOUD
+      apt_repository:
+        repo: "deb http://packages.cloud.google.com/apt cloud-sdk main"
+        update_cache: no
+
+    - name: Adicionando Key do Repositorio do Terraform
+      apt_key:
+        url: https://apt.releases.hashicorp.com/gpg 
+        state: present
+
+    - name: Adicionando o Repositório do Terraform
+      apt_repository:
+        repo: "deb [arch=amd64] https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main" 
+        update_cache: yes
+
+    - name: Adicionando o Repositório do Git
+      apt_repository:
+        repo: 'ppa:git-core/ppa'
+        update_cache: no
+
+    - name: Adicionando Key do Repositorio do Docker
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Adicionando o Repositório do Docker
+      apt_repository:
+        repo: "deb https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        update_cache: yes
+
+    - name: Instalação do GCLOUD, Terraform, Docker e outras dependências
+      apt:
+        pkg: ['google-cloud-sdk','unzip', 'docker-ce', 'build-essential', 'zlib1g-dev', 'libssl-dev', 'libncurses-dev', 'libffi-dev', 'libsqlite3-dev', 'libreadline-dev', 'libbz2-dev', 'ruby', 'python-is-python3', 'curl', 'maven']
+        state: present
+
+    - name: Manter sempre a última versão do Git e Terraform 
+      apt:
+         pkg: ['git','terraform'] 
+         state: latest
+
+    - name: Adicionar Usuario Vagrant no Grupo Docker
+      user:
+        name: vagrant
+        comment: Vagrant User
+        groups: docker
+
+    ############# Setup Java
+    - name: Only run "update_cache=yes" if the last one is more than 3600 seconds ago
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install JAVA related Ubuntu packages
+      apt:
+        name: "{{ packages }}"
+        state: latest
+      vars:
+        packages:
+          - openjdk-11-jdk
+           
+    - name: Set JAVA_HOME
+      lineinfile:
+        dest: /etc/environment
+        state: present
+        regexp: '^JAVA_HOME'
+        line: 'JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64'
+    
+    ############ Setup NGINX
+    - name: ensure nginx is at the latest version
+      apt: name=nginx state=latest
+      become: yes
+    - name: start nginx
+      service:
+          name: nginx
+          state: started
+      become: yes
+    - name: copy the nginx config file and restart nginx
+      copy:
+        src: /vagrant/ansible/nginx_config.cfg
+        dest: /etc/nginx/sites-available/nginx_config.cfg
+      become: yes    
+    - name: restart nginx
+      service:
+        name: nginx
+        state: restarted
+      become: yes    
+    
+    ############ Setup Postgres            
+    - name: Instalação do Postgres
+      apt:
+        pkg: ['postgresql','postgresql-contrib','acl']
+        state: present
+        
+    - name: Instalação do Pip Python
+      apt:
+        pkg: ['python3-pip']
+        state: present
+
+    - name: Instalação do Psycopg2
+      pip:
+        name: 
+          psycopg2-binary
+    
+    - name: Find out if PostgreSQL is initialized
+      ansible.builtin.stat:
+        path: "/var/lib/pgsql/data/pg_hba.conf"
+      register: postgres_data
+    
+    - name: start and enable postgresql service
+      service:
+         name: postgresql
+         state: started
+         enabled: yes    
+         
+    - name: Allow md5 connection for the db user
+      postgresql_pg_hba:      
+        dest: /etc/postgresql/12/main/pg_hba.conf
+        contype: host
+        users: postgres
+        source: ::1
+        databases: all
+        method: md5
+        create: true
+      become: yes
+      become_user: postgres
+      notify: restart postgres
+    
+    - name: creating PostgreSQL Database 
+      become: true
+      become_user: postgres
+      postgresql_db:
+         name: "{{db_name}}"
+         template: template0
+
+    - name: creating postgresql User
+      become: true
+      become_user: postgres
+      postgresql_user:
+        db: "{{db_name}}"
+        name: "{{db_user}}"
+        password: "{{ db_password }}"
+        comment: This is a test user    
+        
+    - name: Grant db user access to app db
+      postgresql_privs:
+        type: database
+        database: "{{ db_name }}"
+        roles: "{{ db_user }}"
+        grant_option: no
+        privs: all
+      become_user: postgres
+    
+    - name: Create Table in Database      
+      become: true
+      become_user: postgres
+      postgresql_table:
+        db: "{{db_name}}"
+        name: message
+        columns:
+        - message_id serial PRIMARY KEY
+        - first_name VARCHAR (255)
+        - last_name VARCHAR (355)
+        - message_date DATE NOT NULL
+        - message text NOT NULL
+        owner: "{{db_user}}"
+
+  handlers:
+    - name: restart postgres
+      service: name=postgresql state=restarted
