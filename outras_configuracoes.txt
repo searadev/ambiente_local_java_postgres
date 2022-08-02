@@ -1,0 +1,31 @@
+Forçando o Ansible a rodar novamente
+ansible-playbook -i inventory playbook.yml
+
+Verificar o log do nginx
+sudo nano /var/log/nginx/error.log
+
+Instalar nginx
+sudo apt-get install nginx
+
+Desinstalar nginx
+sudo apt-get remove --purge nginx nginx-full nginx-common
+sudo apt autoremove
+
+##Configurar gitignore global
+git config --global user.email "usuario@email.com"
+git config --global user.name "Usuario"
+
+##Conectar ao Postgres
+sudo -i -u postgres psql
+
+##Conectar ao banco de dados do Postgres
+\c searadb
+
+##Verificar as tabelas do Postgres
+\dt
+
+##Inserir registro na tabela do Postgres
+ INSERT INTO message(num, message, name) VALUES (1,'testestestes', 'teste1');
+
+	
+	

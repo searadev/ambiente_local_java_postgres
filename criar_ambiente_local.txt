@@ -1,0 +1,114 @@
+######Criação de ambiente local VirutalBox (Ubuntu) + Java + Postgres +NGINX + VSCode
+1-Instalar o VitualBox
+2-Instalar o Vagrant
+3-Instalar o VSCode
+4-Criar o repositório no GIT com o projeto
+5-Baixar o projeto do GIT para uma pasta específica
+6-Criar um projeto para o backend e outro para o frontend
+7-Copiar para a pasta do projeto os arquivos e diretórios:
+	Vangrantfile
+	/ansible
+		inventory
+		nginx_config.cfg
+		playbook.yml
+		vars.yml
+	a: Vagrantfile
+	-Criar um endereço ip privado para conseguir conectar da sua máquina local na máquina virtual. Isso será necessário para conseguir conectar o MySQL Workbench, Postman e VSCode
+	Exemplo: config.vm.network "private_network", ip: "192.168.33.11" --Exemplo--
+	b: ansible:
+	-inventory: Utilizado para informar ao ansible reexecutar sempre na máquina local
+	c:nginx_config.cfg
+	-Utilizado para fazer o NGINX ficar escutando uma porta específica para redirecionar para o serviço.
+	-Será utilizado para criar uma rota entre a máquina local e o container Docker.
+	Exemplo: 
+		# Complete Nginx Docker reverse proxy config file
+			server {
+			listen 80;
+			listen [::]:80;
+			server_name localhost;
+
+			location / {
+				root /usr/share/nginx/html;
+				index index.html index.htm;
+			}
+
+			location /sample {
+				proxy_pass http://192.168.33.11:8080/; --Exemplo--
+			}
+
+			error_page 500 502 503 504 /50x.html;
+			location = /50x.html {
+				root /usr/share/nginx/html;
+			}
+			} # End of Docker Nginx reverse proxy example file
+			
+	d:vars
+	-Utilizado para criar variáveis dos dados do banco de dados
+	e: playbook.yml
+	-Utilizado para instalar todos os pacotes e softwares na VM
+8-Ir para o diretório onde está o Vagrantfile, abrir o git bash e executar o comando: vagrant up
+9-Aguardar a instalação da VM (demora muito)
+10-Após a conclusão, entrar na vm com o comando: vagrant ssh
+11-Após entrar na VM
+12-Testar conexão nginx
+	a:Na máquina local, abrir o browser e digitar: http://192.168.33.11
+	b:Será mostrado uma mensagem do nginx
+13-testar o acesso ao banco de dados:
+	sudo -i -u postgres psql -->	postgres=#
+14-Conectar ao banco de dados do Postgres:
+	postgres=# \c database
+15-Verificar as tabelas do Postgres:
+	postgres=# \dt
+16-Inserir registro na tabela do Postgres
+	postgres=# INSERT INTO table(num, message, name) VALUES (1,'testestestes', 'teste1');
+	exit;
+17-Abrir o VSCode e instalar a extensão: Remote - SSH
+18-Criar uma nova conexão SSH no VSCode com a máquina virtual e se conectar
+	a-Em explorador remoto clicar no +
+	b-digitar: ssh vagrant@192.168.33.11 --Exemplo--
+	c-Escolher o caminho: C:\Users\usuario\.ssh\config
+	Exemplo de arquivo
+		Host nomeDoHost
+		HostName 192.168.33.11
+		User vagrant
+		UserKnownHostsFile /dev/null
+		StrictHostKeyChecking no
+		PasswordAuthentication no
+		IdentityFile C:/pastaDoProjeto/.vagrant/machines/nomeDoProjeto/virtualbox/private_key
+		IdentitiesOnly yes
+		LogLevel FATAL
+	d: Toda vez que é criada uma nova VM pelo Vagrant, ele cria uma chave privada para a conexão remota. O parâmetro IdentityFile do SSH do VSCode utiliza essa chave privada para se conectar.
+	e: Conectar
+19-Configurar a VM para se comunicar com o GIT
+	a:Criar uma chave ssh do GIT: ssh-keygen -t ed25519 -C "your_email@example.com"
+	b:Escolher o diretório local do Linux
+	c:Abrir o arquivo com Cat: cat id_xxxxxxxx.pub
+	d:Copiar a chave
+	e:Abrir o GitHub
+	f:Settings
+	g:SSH and GPG Keys
+	h:Criar uma nova chave com o valor copiado, incluindo o email
+20-Incluir as credenciais do GIT na máquina local:
+	a:git config --global user.email "you@example.com"
+	b:git config --global user.name "Your Name"
+21-Baixar o projeto para dentro da vm, fazer alguma alteração e realizar o commit para testar
+22-Dentro do projeto criar um arquivo Dockerfile
+	Exemplo: 
+		FROM openjdk:11
+		VOLUME /tmp
+		EXPOSE 8080
+		ADD ./target/nomeDoProjeto-0.0.1-SNAPSHOT.jar nomeDoProjeto.jar
+		ENTRYPOINT [ "java", "-jar", "/nomeDoProjeto.jar" ]
+23-Criar uma imagem Docker
+	a:ir para a pasta raiz do projeto
+	b:Compilar um jar: mvn clean package
+	c:Após a criação do jar, buildar uma imagem: docker build -t nomeImagem:v1 .
+	d:Criar um container a partir da imagem: docker run -p 8080:8080 --name nomeContainer nomeImagem:v1
+	e:Sair: ctrl + c
+	f-Iniciar o container: docker start nomeContainer
+24-Acessar o container via Postman local
+	a-Em um novo request do Postman configurar a url: http://192.168.33.11:8080 --Exemplo--
+	b-Executar o request
+25-Se conseguiu chegar até aqui, o próximo passo é criar o ambiente na nuvem.
+26-Desligar a VM:
+	vagrant halt
