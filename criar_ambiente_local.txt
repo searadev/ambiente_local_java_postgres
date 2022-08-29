@@ -62,8 +62,16 @@
 16-Inserir registro na tabela do Postgres
 	postgres=# INSERT INTO table(num, message, name) VALUES (1,'testestestes', 'teste1');
 	exit;
-17-Abrir o VSCode e instalar a extensão: Remote - SSH
-18-Criar uma nova conexão SSH no VSCode com a máquina virtual e se conectar
+17-Habilitar o acesso remoto ao Postgres
+	Obs. Por padrão, após instalar o Postgres, o mesmo não vem habilitado para o acesso remoto. Isso significa que não será possível conectar da máquina local via PGAdmin ou dentro do container
+	a-Mostrar a pasta onde está o arquivo hba do Postgres: sudo -i -u postgres psql --> postgres=# SHOW hba_file;
+	b-acessar a pasta onde os arquivos ficam: cd /etc/postgresql/12/main
+	c-alterar o aquivo postgresql.conf: sudo vi postgresql.conf --> apertar a tecla i --> localizar o address_config e alterar para: listen_addresses = '*' --> apertar esc --> apertar Shift : --> wq para salvar
+	d-alterar o aquivo pg_hba.conf: sudo vi pg_hba.conf --> apertar a tecla i --> localizar onde está o ip v4 e adicionar o ip que se quer liberar
+	e-Restart Postgres: sudo service postgresql restart
+	f-Matar o processo (se necessário) swapp preso quando se usa o comando vi: rm -f .postgresql.conf.swp
+18-Abrir o VSCode e instalar a extensão: Remote - SSH
+19-Criar uma nova conexão SSH no VSCode com a máquina virtual e se conectar
 	a-Em explorador remoto clicar no +
 	b-digitar: ssh vagrant@192.168.33.11 --Exemplo--
 	c-Escolher o caminho: C:\Users\usuario\.ssh\config
@@ -79,7 +87,7 @@
 		LogLevel FATAL
 	d: Toda vez que é criada uma nova VM pelo Vagrant, ele cria uma chave privada para a conexão remota. O parâmetro IdentityFile do SSH do VSCode utiliza essa chave privada para se conectar.
 	e: Conectar
-19-Configurar a VM para se comunicar com o GIT
+20-Configurar a VM para se comunicar com o GIT
 	a:Criar uma chave ssh do GIT: ssh-keygen -t ed25519 -C "your_email@example.com"
 	b:Escolher o diretório local do Linux
 	c:Abrir o arquivo com Cat: cat id_xxxxxxxx.pub
@@ -88,27 +96,27 @@
 	f:Settings
 	g:SSH and GPG Keys
 	h:Criar uma nova chave com o valor copiado, incluindo o email
-20-Incluir as credenciais do GIT na máquina local:
+21-Incluir as credenciais do GIT na máquina local:
 	a:git config --global user.email "you@example.com"
 	b:git config --global user.name "Your Name"
-21-Baixar o projeto para dentro da vm, fazer alguma alteração e realizar o commit para testar
-22-Dentro do projeto criar um arquivo Dockerfile
+22-Baixar o projeto para dentro da vm, fazer alguma alteração e realizar o commit para testar
+23-Dentro do projeto criar um arquivo Dockerfile
 	Exemplo: 
 		FROM openjdk:11
 		VOLUME /tmp
 		EXPOSE 8080
 		ADD ./target/nomeDoProjeto-0.0.1-SNAPSHOT.jar nomeDoProjeto.jar
 		ENTRYPOINT [ "java", "-jar", "/nomeDoProjeto.jar" ]
-23-Criar uma imagem Docker
+24-Criar uma imagem Docker
 	a:ir para a pasta raiz do projeto
 	b:Compilar um jar: mvn clean package
 	c:Após a criação do jar, buildar uma imagem: docker build -t nomeImagem:v1 .
 	d:Criar um container a partir da imagem: docker run -p 8080:8080 --name nomeContainer nomeImagem:v1
 	e:Sair: ctrl + c
 	f-Iniciar o container: docker start nomeContainer
-24-Acessar o container via Postman local
+25-Acessar o container via Postman local
 	a-Em um novo request do Postman configurar a url: http://192.168.33.11:8080 --Exemplo--
 	b-Executar o request
-25-Se conseguiu chegar até aqui, o próximo passo é criar o ambiente na nuvem.
-26-Desligar a VM:
+26-Se conseguiu chegar até aqui, o próximo passo é criar o ambiente na nuvem.
+27-Desligar a VM:
 	vagrant halt
