@@ -65,8 +65,9 @@
 17-Habilitar o acesso remoto ao Postgres
 	Obs. Por padrão, após instalar o Postgres, o mesmo não vem habilitado para o acesso remoto. Isso significa que não será possível conectar da máquina local via PGAdmin ou dentro do container
 	a-Mostrar a pasta onde está o arquivo hba do Postgres: sudo -i -u postgres psql --> postgres=# SHOW hba_file;
-	b-acessar a pasta onde os arquivos ficam: cd /etc/postgresql/12/main
+	b-acessar a pasta onde os arquivos ficam: cd /etc/postgresql/12/main	
 	c-alterar o aquivo postgresql.conf: sudo vi postgresql.conf --> apertar a tecla i --> localizar o address_config e alterar para: listen_addresses = '*' --> apertar esc --> apertar Shift : --> wq para salvar
+	Obs. Por padrão o address_config vem comentado. Além de alterar para '*', será ncessário descomentar
 	d-alterar o aquivo pg_hba.conf: sudo vi pg_hba.conf --> apertar a tecla i --> localizar onde está o ip v4 e adicionar para todos os ip's:
 		host    all             all     0.0.0.0/0                       md5
 		host    all             all     ::/0                            md5
