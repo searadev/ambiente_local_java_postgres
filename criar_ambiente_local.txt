@@ -67,7 +67,9 @@
 	a-Mostrar a pasta onde está o arquivo hba do Postgres: sudo -i -u postgres psql --> postgres=# SHOW hba_file;
 	b-acessar a pasta onde os arquivos ficam: cd /etc/postgresql/12/main
 	c-alterar o aquivo postgresql.conf: sudo vi postgresql.conf --> apertar a tecla i --> localizar o address_config e alterar para: listen_addresses = '*' --> apertar esc --> apertar Shift : --> wq para salvar
-	d-alterar o aquivo pg_hba.conf: sudo vi pg_hba.conf --> apertar a tecla i --> localizar onde está o ip v4 e adicionar o ip que se quer liberar
+	d-alterar o aquivo pg_hba.conf: sudo vi pg_hba.conf --> apertar a tecla i --> localizar onde está o ip v4 e adicionar para todos os ip's:
+		host    all             all     0.0.0.0/0                       md5
+		host    all             all     ::/0                            md5
 	e-Restart Postgres: sudo service postgresql restart
 	f-Matar o processo (se necessário) swapp preso quando se usa o comando vi: rm -f .postgresql.conf.swp
 18-Abrir o VSCode e instalar a extensão: Remote - SSH
