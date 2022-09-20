@@ -39,7 +39,7 @@ c-Developer Settings
 d-Personal access token
 e-Generate new token
 7-Configurar o git remote com o token copiado, e adicionar a url do repositório:
-git remote set-url origin https://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@github.com/searadev/seara-frontend.git
+git remote set-url origin token
 8-Testar o clone, pull e push
 9-E caso seja necessário verificar qual repositório o diretório está vinculado:
 $ git remote -v
