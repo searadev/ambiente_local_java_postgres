@@ -1,0 +1,86 @@
+Reestartar ou startar Docker:
+sudo service docker start
+Add password postgres
+ALTER USER user_name WITH PASSWORD 'new_password';
+Reestartar Postgres
+sudo service postgresql restart
+copiar todo o diretório para outro: 
+cp -r /path/to/directory /path/to/location/new-name
+
+excluir diretório: 
+Type the command rm -rf dirname to delete a directory forcefully.
+
+
+Front-end
+1-Instalação NPM, Yarn, VS Code
+sudo apt-get remove nodejs
+sudo apt update
+sudo apt upgrade
+sudo apt install -y curl
+curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
+sudo apt install -y nodejs
+2-Criar um repositório em /home:
+Não consegui baixar as dependências do Node para um repositório compartilhado entre VM e Host (meu laptop). A única forma de baixar as dependências foi baixar o projeto 
+em um diretório interno da vm (/home/searadev). Dessa forma o Node consegue baixar todas as dependências e buildar a aplicação.
+Porém, encontrei outro problema que foi vincular o repositório do git para fazer pull/push. Para isso foi necessário:
+Comando mkdir
+3-Dar permissões para esse repositório e usuário:
+chown -R vagrant /home/searadev
+4-vincular a url do repositório do git:
+git remote set-url --add origin https://github.com/searadev/seara-frontend.git
+Outra forma de vincular:
+git remote add origin https://github.com/searadev/seara-frontend.git
+5-Remover o ssh que havia criado anteriormente para o backend:
+git remote set-url --delete origin git@github.com:searadev/seara-frontend.git
+6-criar um Token no git:
+a-Git
+b-Settings
+c-Developer Settings
+d-Personal access token
+e-Generate new token
+7-Configurar o git remote com o token copiado, e adicionar a url do repositório:
+git remote set-url origin https://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@github.com/searadev/seara-frontend.git
+8-Testar o clone, pull e push
+9-E caso seja necessário verificar qual repositório o diretório está vinculado:
+$ git remote -v
+# Verify new remote
+> origin  https://github.com/searadev/seara-frontend.git (fetch)
+> origin  https://github.com/searadev/seara-frontend.git (push)
+10-Criar imagem e iniciar o container
+a-Criar o Dockerfile
+	FROM node:14.20.0 as react-build
+	WORKDIR /app
+	COPY . ./
+	RUN yarn
+	RUN yarn build
+	CMD ["yarn", "start"]
+b-criar a imagem: docker build -f Dockerfile -t searafront .
+c-criar o container: docker run -it -p 4001:3000 searafront
+11-Criar a pipeline para o Heroku
+name: Seara-front
+
+on:
+  push:
+    branches:
+      - main
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Use Node.js 14.x
+        uses: actions/setup-node@v1
+        with:
+          node-version: 14.x
+      - run: yarn
+      - run: yarn build
+      
+      - name: Deploy to Heroku
+        uses: akhileshns/heroku-deploy@v3.12.12
+        with:
+          heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
+          heroku_app_name: ${{ secrets.HEROKU_APP_NAME }}
+          heroku_email: ${{ secrets.HEROKU_EMAIL }}
+          usedocker: true

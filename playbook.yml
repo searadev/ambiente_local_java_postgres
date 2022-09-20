@@ -1,0 +1,108 @@
+---
+# PLAY PARA CONFIGURACAO DO HOST
+- hosts: localhost
+  vars:
+    ansible_python_interpreter: auto_silent
+  name: Configurando o Host
+  become: yes
+  
+  vars_files:
+    - vars.yml
+
+  tasks:
+    - name: Adicionando o Repositório do Git
+      apt_repository:
+        repo: 'ppa:git-core/ppa'
+        update_cache: no
+
+    - name: Adicionando Key do Repositorio do Docker
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Adicionando o Repositório do Docker
+      apt_repository:
+        repo: "deb https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        update_cache: yes
+
+    - name: Instalação do Docker e outras dependências
+      apt:
+        pkg: ['unzip', 'docker-ce', 'build-essential', 'zlib1g-dev', 'libssl-dev', 'libncurses-dev', 'libffi-dev', 'libsqlite3-dev', 'libreadline-dev', 'libbz2-dev', 'ruby', 'python-is-python3', 'curl', 'maven']
+        state: present
+
+    - name: Manter sempre a última versão do Git 
+      apt:
+         pkg: ['git'] 
+         state: latest
+ 
+    ############# Setup Java
+    - name: Only run "update_cache=yes" if the last one is more than 3600 seconds ago
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install JAVA related Ubuntu packages
+      apt:
+        name: "{{ packages }}"
+        state: latest
+      vars:
+        packages:
+          - openjdk-11-jdk
+           
+    - name: Set JAVA_HOME
+      lineinfile:
+        dest: /etc/environment
+        state: present
+        regexp: '^JAVA_HOME'
+        line: 'JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64'
+    
+    ############ Setup Postgres            
+    - name: Instalação do Postgres
+      apt:
+        pkg: ['postgresql','postgresql-contrib','acl']
+        state: present
+        
+    - name: Instalação do Pip Python
+      apt:
+        pkg: ['python3-pip']
+        state: present
+
+    - name: Instalação do Psycopg2
+      pip:
+        name: 
+          psycopg2-binary
+    
+    - name: Find out if PostgreSQL is initialized
+      ansible.builtin.stat:
+        path: "/var/lib/pgsql/data/pg_hba.conf"
+      register: postgres_data
+    
+    - name: start and enable postgresql service
+      service:
+         name: postgresql
+         state: started
+         enabled: yes    
+         
+    - name: Allow md5 connection for the db user
+      postgresql_pg_hba:      
+        dest: /etc/postgresql/12/main/pg_hba.conf
+        contype: host
+        users: postgres
+        source: ::1
+        databases: all
+        method: md5
+        create: true
+      become: yes
+      become_user: postgres
+      notify: restart postgres
+    
+    - name: creating PostgreSQL Database 
+      become: true
+      become_user: postgres
+      postgresql_db:
+         name: searadb
+         template: template0        
+
+  handlers:
+    - name: restart postgres
+      service: name=postgresql state=restarted
